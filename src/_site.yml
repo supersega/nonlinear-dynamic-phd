@@ -1,0 +1,13 @@
+name: "phd"
+output_dir: "../docs"
+exclude: [3rd-year-report]
+navbar:
+  title: "Nonlinear Dynamics Notes"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+output:
+  html_document:
+theme: readthedown
