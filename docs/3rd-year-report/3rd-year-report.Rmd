@@ -6,11 +6,13 @@ output:
     transition: "convex"
     self_contained: true
     css: style.css
-    fig_width: 7
-    fig_height: 6
+    fig_width: 6
+    fig_height: 5
     fig_caption: true
     includes:
       in_header: style.html
+    reveal_options:
+      slideNumber: true
   beamer_presentation:
     
     latex_engine: xelatex
@@ -50,6 +52,14 @@ knitr::opts_chunk$set(root.dir = '../../doc/3rd-year-report')
 
 ## Автоматическое дифференцирование
 
+> - Автоматическое дифференцирование (АД) - способ вычисления производной заданой алгоритмом.
+
+> - АД использует тот факт, что каждая компьютерная программа, выполняет последовательность элементарных арифметических операций (сложение, умножение...) и элементарных функций (exp, cos...).
+
+> - АД отличается от символьного и численного дифф-ия (МКР). Символьное дифф-ие может привести к неэффективному коду и столкнуться с трудностями преобразования компьютерной программы в одно выражение, тогда как МКР может привести к ошибкам округления .
+
+## Основы
+
 Вспомним некоторые фундаментальные понятия.
 
 Дифференцирование сложной функции.
@@ -60,25 +70,25 @@ $$y = f(g(h(x))) = f(g(h(w_0))) = f(g(w_1)) = f(w_2) = w_3$$ - сложная ф
 > - Производную такой функции можно вычислить по формуле:
 $$\frac{dy}{dx} = \frac{dy}{dw_2} \frac{dw_2}{dw_1} \frac{dw_1}{dx} = \frac{df(w_2)}{dw_2} \frac{dg(w_1)}{dw_1} \frac{dh(w_0)}{dx}$$
 
-## Автоматическое дифференцирование
+## Подходы
 
 Существует два принципиально разных подхода к реализации автоматического дифференцирования.
 
-> - Прямой - сначала мы вычесляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
-> - Обратный - сначала мы вычесляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Прямой - сначала мы вычисляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Обратный - сначала мы вычисляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
 
 <div class="fragment">
 Поскольку в настоящей работе используется прямой метод, на нем остановимся подробнее.
 Обратный метод предлагается освоить слушателю самостоятельно.
 </div>
 
-## Автоматическое дифференцирование
+## Разбор прямого метода
 
 Разберем прямой метод на примере функции 2х переменных $f(x, y) = xsin(xy) + ycos(y)$
 Далее переменные $x$ и $y$ будем называть независимыми переменными.
 
-> - Прямой - сначала мы вычесляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
-> - Обратный - сначала мы вычесляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Прямой - сначала мы вычисляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Обратный - сначала мы вычисляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
 
 <div class="fragment">
 Поскольку в настоящей работе используется прямой метод, на нем остановимся подробнее.
@@ -189,9 +199,45 @@ $$ f(x_0) = y_0 + \varepsilon y_0', $$
 где $y_0' = \frac{df}{dx}|_{x = x_0}$
 </div>
 
-## Метод продолжения переодических решений
+## Продолжение решений
 
-Постановка проблемы для задачи продолжения переодических решений.
+Сформулируем задачу продолжения решений.
+
+<div class="fragment">
+Дано:
+
+Система уравнений $F(x, \lambda) = 0$ где $F: \mathbb{R}^n \rightarrow \mathbb{R}^n, n > 0$, 
+$\lambda \in \mathbb{R}$ - параметер.
+</div>
+
+<div class="fragment">
+Необходимо:
+
+Найти решения системы $F(x, \lambda) = 0$ при различных значениях параметра $\lambda$
+</div>
+
+## Алгоритм продолжения решений 
+
+<div class="fragment">
+> **_Выбираем начальные значения $x$ и $\lambda$_**
+
+</div>
+<div class="fragment">
+> **_Фиксируем $\lambda$ и корректируем $x$_**
+
+</div>
+<div class="fragment">
+> **_Задаем новое значение $\lambda$ и выбираем $x$ для следующего шага_**
+
+</div>
+<div class="fragment">
+> **_Переходим на первый шаг, или завершаем итерации если это необходимо_**
+
+</div>
+
+## Продолжение переодических решений
+
+<div class="fragment">
 Дана следующая динамическая система.
 
 $$ \dot{q} = \theta(q, t, \lambda) $$ 
@@ -200,61 +246,64 @@ $$ \dot{q} = \theta(q, t, \lambda) $$
 
 Если исследуются колебания с периодом $T$, то краевые условия (условия периодичности) имеют вид:
 
-$$ q(0) = q(t) $$ 
+$$ q(0) = q(T) $$ 
+</div>
 
-## Метод продолжения переодических решений
+## 2-х точечная краевая задача
 
 Рассмотрим задачу Коши для системы $\dot{q} = \theta(q, t, \lambda)$  с начальными условиями $q(0) = q_0$
-Решение задачи в точке $T$ обозначим как $q(T) = q_lT$ и подставляя обозначения в краевые условия $q(0) = q(t)$ получим следующею систему нелинейных уравнений:
+Решение задачи в точке $T$ обозначим как $q(T) = q_T$ и подставляя обозначения в краевые условия $q(0) = q(t)$ получим следующею систему нелинейных уравнений:
 
 $$F(q_0, \lambda) = q_{T} - q_0 = 0$$ 
 
-## Newton
+## Метод Ньютона
 
-\begin{algorithm}
-\caption{Метод Ньютона}
-\begin{algorithmic}[1]
-\Function{newton}{$f, wrt, at, it, tol$}\Comment{f - nonlinear function, wrt - переменные относительно которых вычисляются производные, at - точка в которой вычисляют производные, it - максимальное количество, tol - точность решения}
+<div class="fragment">
+Для системы уравнений $F(x) = 0$ где $F: \mathbb{R}^n \rightarrow \mathbb{R}^n, n > 0$ метод Ньютона можно записать следующим образом.
+</div>
 
-\While{$it \gets it - 1$}
-  \State $jacobian(f, wrt, at, u, J)$;
-  \State $wrt \gets wrt - J^{-1} \cdot u ;$;\Comment{Шаг метода Ньютона}
-  \If{$norm(u) < tol$}
-      \Return $true$
-  \EndIf
-\EndWhile
+<div class="fragment">
+```{r, tidy=FALSE, eval=FALSE}
 
-\State \Return $false$
+x - 'initial guess'
+tolerance - 'computition tolerance'
 
-\EndFunction
-\end{algorithmic}
-\label{alg:autodiff-jacobian}
-\end{algorithm}
+while norm(F(x)) < tolerance
+  jacobian = jacobian(F, x)
+  value = F(x)
+  x = x - inverse(jacobian) * value;
 
-## Метод продолжения решений Moore-Penrose 
-
-```cpp
-#include <iostream>
-#include <fstream>
-using namespace std;
-
-#include <nld/autocont.hpp>
-using namespace nld;
-
-int main() {
-    continuation_parameters params(newton_parameters(10, 0.000001),
-      1.45, 0.0002, 0.008, direction::forward);
-
-    vector_xdd u0 = vector_xdd::Zero(2);
-    dual_d a0 = 0.0;
-
-    for (auto [v, p] : arc_length(f, params, u0, alpha0, to_2d<0>)) {
-        cout << p << ';'<< v << endl;
-    }
-}
 ```
+</div>
 
-## Биффуркационная диаграмма
+## Вычисление матрици Якоби
+
+<div class="fragment">
+Для решения задачи продолжения решений необходимо вычислить матрицу Якоби
+для системы уравнений $F(q_0, \lambda) = q_{T} - q_0 = 0$.
+</div>
+
+<div class="fragment">
+Существует два подхода к вычислению матрицы Якоби:
+</div>
+> 1. Решение уравнений в вариациях для $\dot{q} = \theta(q, t, \lambda)$.
+> 2. Аппроксимация методом конечных разностей.
+
+<div class="fragment">
+|                              | Ур-ия в вариациях               | МКР                             |
+|------------------------------|---------------------------------|---------------------------------|
+| Символьное дифференцирование | `r emo::ji("white_check_mark")` | `r emo::ji("x")`                |
+|     Потеря точности          | `r emo::ji("x")`                | `r emo::ji("white_check_mark")` |
+</div>
+
+<div class="fragment">
+Применяя автоматическое дифференцирование к методу продолжения решений мы будем вычислять матрицу Якоби
+вместе с системой уравнений.
+</div>
+
+## Алгебраическая система
+
+\begin{cases} - 2u_0 + u_1 + \alpha exp(u_0) = 0 \\\\ u_0 - 2u_1 + \alpha exp(u_1) = 0 \end{cases}
 
 <center>
 
@@ -273,3 +322,46 @@ p1 + labs(x = expression(alpha), y = expression(f[0]))
 ```
 </center>
 
+## Осцилятор Дуффинга
+
+$$\ddot{x} + \delta \dot{x} + \alpha x + \beta x^3 = \gamma \cos (\omega t)$$
+
+<center>
+
+```{r, echo=FALSE}
+options(warn=-1)
+
+library(ggplot2)
+
+bifurcation_diagramm <- read.csv("data/duffing_al.csv", sep = ";")
+
+p1 <- ggplot() + 
+    geom_path(aes(y = y, x = x), data = bifurcation_diagramm, colour = "coral", size = 1) + 
+    theme_gray()
+ 
+p1 + labs(x = expression(alpha), y = expression(f[0]))
+```
+</center>
+
+## Код на C++
+
+```cpp
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+#include <nld/autocont.hpp>
+using namespace nld;
+
+int main() {
+    continuation_parameters params(newton_parameters(10, 0.000001),
+      1.45, 0.0002, 0.008, direction::forward);
+
+    vector_xdd u0 = vector_xdd::Zero(2);
+    dual_d a0 = 0.0;
+
+    for (auto [v, p] : arc_length(f, params, u0, alpha0, to_2d<0>)) {
+        // Do something with 'p' and 'v';
+    }
+}
+```
