@@ -1,0 +1,31 @@
+.reveal pre code {
+	padding: 5px;
+	overflow: auto;
+	max-height: 600px;
+	word-wrap: normal;
+}
+
+  .reveal p {
+    text-align: left;
+  }
+  .reveal ul {
+    display: block;
+  }
+  .reveal ol {
+    display: block;
+  }
+
+.reveal section img { 
+  background:none; 
+  border:none; 
+  box-shadow:none; 
+}
+
+#header-footer .slide-logo {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  height: 120px;
+  width: 120px;
+  opacity: 0.7;
+}

@@ -1,13 +1,14 @@
 name: "phd"
 output_dir: "../docs"
-exclude: [3rd-year-report]
 navbar:
   title: "Nonlinear Dynamics Notes"
   left:
-    - text: "Home"
-      href: index.html
-    - text: "About"
-      href: about.html
+    - text: "Slides"
+      href: slides.html
+    - text: "Blog"
+      href: blog.html
 output:
   html_document:
-theme: readthedown
+    theme: yeti
+    css: 'style.css'
+  

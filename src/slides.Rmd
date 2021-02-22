@@ -1,0 +1,13 @@
+---
+title: "Slides"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+On this page you can find links with short description.
+
+## Continuation via automatic differentiation
+
+[3rd year PhD report (in Russian)](3rd-year-report/3rd-year-report.html): PhD work report. Let us talk about ODE periodic solution continuation via automatic differentiation.

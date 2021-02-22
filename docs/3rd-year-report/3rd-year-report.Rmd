@@ -1,0 +1,275 @@
+---
+title: "Разработка метода продолжения решений посредством автоматического дифференцирования"
+output:
+  revealjs::revealjs_presentation:
+    theme: serif
+    transition: "convex"
+    self_contained: true
+    css: style.css
+    fig_width: 7
+    fig_height: 6
+    fig_caption: true
+    includes:
+      in_header: style.html
+  beamer_presentation:
+    
+    latex_engine: xelatex
+  ioslides_presentation: default
+header-includes:
+  - \usepackage{algorithm}
+encoding: UTF-8
+mainfont: Arial
+author: Малышев Сергей
+date: Февраль 23, 2021
+---
+
+```{r setup, include=FALSE}
+library(tinytex)
+options(tinytex.verbose = TRUE)
+options(tinytex.clean = FALSE)
+knitr::opts_chunk$set(root.dir = '../../doc/3rd-year-report')
+```
+
+## Преамбула
+
+<section style="text-align: left;">
+Метод продолжения решений - это численный метод позволяющий рассчитывать ратификационные диаграммы для нелинейных
+систем. В настоящей работе предлагается новый подход для реализации данного метода. Мы предлагаем использовать метод автоматического дифференцирования для нахождения матрицы Якоби которая необходима для расчетов.
+</section>
+## Содержание
+
+<section style="text-align: left;">
+Данный доклад состоит из следующий логических разделов:
+
+> 1. Введение в введение в автоматическое дифференцирование.
+> 2. Задача продолжения по параметру, классические подходы к вычислению матрицы Якоби.
+> 3. Вычисление матрицы Якоби методом автоматического дифференцирования.
+> 4. Примеры с кодом.
+
+</section>
+
+## Автоматическое дифференцирование
+
+Вспомним некоторые фундаментальные понятия.
+
+Дифференцирование сложной функции.
+
+> - Рассмотрим следующею сложную функцию.
+$$y = f(g(h(x))) = f(g(h(w_0))) = f(g(w_1)) = f(w_2) = w_3$$ - сложная функция
+
+> - Производную такой функции можно вычислить по формуле:
+$$\frac{dy}{dx} = \frac{dy}{dw_2} \frac{dw_2}{dw_1} \frac{dw_1}{dx} = \frac{df(w_2)}{dw_2} \frac{dg(w_1)}{dw_1} \frac{dh(w_0)}{dx}$$
+
+## Автоматическое дифференцирование
+
+Существует два принципиально разных подхода к реализации автоматического дифференцирования.
+
+> - Прямой - сначала мы вычесляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Обратный - сначала мы вычесляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+
+<div class="fragment">
+Поскольку в настоящей работе используется прямой метод, на нем остановимся подробнее.
+Обратный метод предлагается освоить слушателю самостоятельно.
+</div>
+
+## Автоматическое дифференцирование
+
+Разберем прямой метод на примере функции 2х переменных $f(x, y) = xsin(xy) + ycos(y)$
+Далее переменные $x$ и $y$ будем называть независимыми переменными.
+
+> - Прямой - сначала мы вычесляем $\frac{dw_1}{dx}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+> - Обратный - сначала мы вычесляем $\frac{dy}{dw_2}$ затем $\frac{dw_2}{dw_1}$ и так далее.
+
+<div class="fragment">
+Поскольку в настоящей работе используется прямой метод, на нем остановимся подробнее.
+Обратный метод предлагается освоить слушателю самостоятельно.
+</div>
+
+## Дерево выражений
+
+<center>
+```{r, echo=FALSE}
+#library
+library(igraph, warn.conflicts = FALSE)
+
+par(bg="#F0F1EB")
+
+nodes <- cbind('id'=c('x','y','sin','*','+','f(x, y)'))
+
+links <- cbind('from' = c(rep('x',2), 'y', 'sin', '*', '+'),
+            'to' = c('sin', rep('*',2), rep('+',2), 'f(x, y)'))
+
+net <- graph_from_data_frame(links, vertices = nodes, directed = T)
+
+l <- cbind(c(0, 6, 1, 5, rep(3, 2)), c(rep(0, 2), rep(3, 2), 5, 7))
+
+plot(net,
+    vertex.size = 40,
+    vertex.color = 'coral',
+    vertex.shape = 'circle',
+    
+    vertex.label.color = 'black',
+    vertex.label.family = 'Times',
+    vertex.label.font = 3,
+    vertex.label.cex = 1.22,
+    
+    edge.color = 'black',
+    
+    layout = l)
+```
+</center>
+
+## Вычисление производной
+
+<div class="fragment">
+Вычислим производную $f(x, y) = xsin(xy) + ycos(y)$ по $x$.
+Тогда: $x = w_1, \frac{dw_1} {dx} = 1, y = w_2, \frac{dw_2} {dx} = 0$.
+</div>
+
+<div class="fragment">
+| Выражение             | Производная                                  |
+|-----------------------|:--------------------------------------------:|
+| $$ w_1 = x $$         | $$ \dot{w_1} = 1 $$                          |
+| $$ w_2 = x $$         | $$ \dot{w_2} = 0 $$                          |
+| $$ w_3 = w_1w_2 $$    | $$ \dot{w_3}= \dot{w_1}w_2 + \dot{w_2}w_1 $$ |
+| $$ w_4 = sin(w_1) $$  | $$ \dot{w_4}= cos(w_1)\dot{w_1} $$           |
+| $$ w_5 = w_3 + w_4 $$ | $$ \dot{w_5}= \dot{w_3} + \dot{w_4} $$       |
+</div>
+## Дуальное число
+
+<div class="fragment">
+Прямой метод можно реализовать при помощи дуальных чисел.
+</div>
+
+<div class="fragment">
+Дуальное число - это гиперкомплексное число вида
+$$a + \varepsilon b, $$
+</div>
+<div class="fragment">
+где $a, b \in \mathbb{R}$, a $\varepsilon^2 = 0$.
+</div>
+<div class="fragment">
+Над дуальными числами определенны операции сложения и произведения:
+$$(a_1 + \varepsilon b_1) + (a_2 + \varepsilon b_2) = (a_1 + a_2)  + \varepsilon(b_1 + b_2)$$
+$$(a_1 + \varepsilon b_1)  (a_2 + \varepsilon b_2) = (a_1  a_2)  + \varepsilon(a_1  b_2 + b_1  a_2)$$
+</div>
+
+## Погружаемся глубже в поле дуальных чисел
+
+<div class="fragment">
+Произведем операцию деления над дуальными числами.
+$$\frac{z_1} {z_2} = \frac{a_1 + \varepsilon b_1} {a_2 + \varepsilon b_2} = \frac{(a_1 + \varepsilon b_1)(a_2 - \varepsilon b_2)} {(a_2 + \varepsilon b_2)(a_2 - \varepsilon b_2)} = \frac{a_1 a_2 - \varepsilon (b_1 a_2 - a_1 b_2)} {a_2^2}$$
+</div>
+
+<div class="fragment">
+$$ \frac{z_1} {z_2} = \frac{a_1} {a_2} - \varepsilon \boxed {\frac{b_1 a_2 - a_1 b_2} {a_2}} $$
+...
+</div>
+
+<div class="fragment">
+Производная частного:
+$$ (\frac{u}{v})' = \frac{u' v - v' u} {v^2} $$
+</div>
+
+## Реализация прямого метода с помощью дуальных чисел
+
+<div class="fragment">
+Применим дуальные числа для реализации автоматического дифференцирования.
+Запишем дуальное число в следующем виде.
+$$ u = u + \varepsilon u', $$ где $u'$ - производная $u$. 
+</div>
+
+<div class="fragment">
+Перегрузив операции сложения, произведения, и т.д, а так же приняв $u' = 1$ для интересующей независимой переменной вычислим значение функции $f: D -> D$ используя дуальные числа. 
+</div>
+
+<div class="fragment">
+$$ f(x_0) = y_0 + \varepsilon y_0', $$ 
+
+где $y_0' = \frac{df}{dx}|_{x = x_0}$
+</div>
+
+## Метод продолжения переодических решений
+
+Постановка проблемы для задачи продолжения переодических решений.
+Дана следующая динамическая система.
+
+$$ \dot{q} = \theta(q, t, \lambda) $$ 
+
+где $q \in \mathbb{R}^m, \theta(q, t) = \theta(q, t + T)$ - $T$ -периодическая функция по явно входящему времени, $\lambda$ - некоторый характеристический параметр.
+
+Если исследуются колебания с периодом $T$, то краевые условия (условия периодичности) имеют вид:
+
+$$ q(0) = q(t) $$ 
+
+## Метод продолжения переодических решений
+
+Рассмотрим задачу Коши для системы $\dot{q} = \theta(q, t, \lambda)$  с начальными условиями $q(0) = q_0$
+Решение задачи в точке $T$ обозначим как $q(T) = q_lT$ и подставляя обозначения в краевые условия $q(0) = q(t)$ получим следующею систему нелинейных уравнений:
+
+$$F(q_0, \lambda) = q_{T} - q_0 = 0$$ 
+
+## Newton
+
+\begin{algorithm}
+\caption{Метод Ньютона}
+\begin{algorithmic}[1]
+\Function{newton}{$f, wrt, at, it, tol$}\Comment{f - nonlinear function, wrt - переменные относительно которых вычисляются производные, at - точка в которой вычисляют производные, it - максимальное количество, tol - точность решения}
+
+\While{$it \gets it - 1$}
+  \State $jacobian(f, wrt, at, u, J)$;
+  \State $wrt \gets wrt - J^{-1} \cdot u ;$;\Comment{Шаг метода Ньютона}
+  \If{$norm(u) < tol$}
+      \Return $true$
+  \EndIf
+\EndWhile
+
+\State \Return $false$
+
+\EndFunction
+\end{algorithmic}
+\label{alg:autodiff-jacobian}
+\end{algorithm}
+
+## Метод продолжения решений Moore-Penrose 
+
+```cpp
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+#include <nld/autocont.hpp>
+using namespace nld;
+
+int main() {
+    continuation_parameters params(newton_parameters(10, 0.000001),
+      1.45, 0.0002, 0.008, direction::forward);
+
+    vector_xdd u0 = vector_xdd::Zero(2);
+    dual_d a0 = 0.0;
+
+    for (auto [v, p] : arc_length(f, params, u0, alpha0, to_2d<0>)) {
+        cout << p << ';'<< v << endl;
+    }
+}
+```
+
+## Биффуркационная диаграмма
+
+<center>
+
+```{r, echo=FALSE}
+options(warn=-1)
+
+library(ggplot2)
+
+bifurcation_diagramm <- read.csv("data/matcont_al.csv", sep = ";")
+
+p1 <- ggplot() + 
+    geom_path(aes(y = y, x = x), data = bifurcation_diagramm, colour = "coral", size = 1) + 
+    theme_gray()
+ 
+p1 + labs(x = expression(alpha), y = expression(f[0]))
+```
+</center>
+
