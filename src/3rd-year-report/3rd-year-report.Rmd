@@ -32,12 +32,12 @@ options(tinytex.clean = FALSE)
 knitr::opts_chunk$set(root.dir = '../../doc/3rd-year-report')
 ```
 
-## Преамбула
+## Почему возникла эта работа? 
 
-<section style="text-align: left;">
-Метод продолжения решений - это численный метод позволяющий рассчитывать ратификационные диаграммы для нелинейных
-систем. В настоящей работе предлагается новый подход для реализации данного метода. Мы предлагаем использовать метод автоматического дифференцирования для нахождения матрицы Якоби которая необходима для расчетов.
-</section>
+<div class="fragment">
+В предыдущих работах докладчика для изучения поведения динамических систем применялся метод продолжения по параметру. В данном докладе планируется изложить иной подход для реализации этого метода, который, обладает некоторыми преимуществами по сравнению с существующими.
+</div>
+
 ## Содержание
 
 <section style="text-align: left;">
@@ -57,7 +57,7 @@ knitr::opts_chunk$set(root.dir = '../../doc/3rd-year-report')
 
 > - АД отличается от символьного и численного дифф-ия (МКР). Символьное дифф-ие может привести к неэффективному коду и столкнуться с трудностями преобразования компьютерной программы в одно выражение, тогда как МКР может привести к ошибкам округления .
 
-## Основы
+## Основы, основы, и еще раз основы
 
 Вспомним некоторые фундаментальные понятия.
 
@@ -69,7 +69,7 @@ $$y = f(g(h(x))) = f(g(h(w_0))) = f(g(w_1)) = f(w_2) = w_3$$ - сложная ф
 > - Производную такой функции можно вычислить по формуле:
 $$\frac{dy}{dx} = \frac{dy}{dw_2} \frac{dw_2}{dw_1} \frac{dw_1}{dx} = \frac{df(w_2)}{dw_2} \frac{dg(w_1)}{dw_1} \frac{dh(w_0)}{dx}$$
 
-## Подходы
+## Подходы к реализации АД
 
 Существует два принципиально разных подхода к реализации автоматического дифференцирования.
 
@@ -206,7 +206,7 @@ $$ f(x_0) = y_0 + \varepsilon y_0', $$
 Дано:
 
 Система уравнений $F(x, \lambda) = 0$ где $F: \mathbb{R}^n \rightarrow \mathbb{R}^n, n > 0$, 
-$\lambda \in \mathbb{R}$ - параметер.
+$\lambda \in \mathbb{R}$ - параметр.
 </div>
 
 <div class="fragment">
@@ -300,9 +300,15 @@ while norm(F(x)) < tolerance
 вместе с системой уравнений.
 </div>
 
-## Алгебраическая система
+## Подробнее про дифференцирование метода продолжения решений
 
-\begin{cases} - 2u_0 + u_1 + \alpha exp(u_0) = 0 \\\\ u_0 - 2u_1 + \alpha exp(u_1) = 0 \end{cases}
+> 1. В программе необходимо заменить все типы с плавающей запятой на дуальные числа.
+> 2. Заменить алгоритм вычисления матрицы Якоби на алгоритм который учитывает АД.
+> 3. Использовать полученный код для вычислений.
+
+## Алгебраическая система из Matcont tutorial
+
+\begin{cases} - a_11u_0 + a_12u_1 + \alpha exp(u_0) = 0 \\\\ a_21u_0 - a_22u_1 + \alpha exp(u_1) = 0 \end{cases}
 
 <center>
 
@@ -321,6 +327,31 @@ p1 + labs(x = expression(alpha), y = expression(f[0]))
 ```
 </center>
 
+## Пример из Matcont tutorial
+
+```cpp
+#include <nld/autocont.hpp>
+using namespace nld;
+
+vector_xdd f(const vector_xdd& u, dual_d alpha) {
+  vector_xdd f(u.size());
+  f[0] = - 2 * u[0] + u[1] + alpha * exp(u[0]);
+  f[1] = u[0] - 2 * u[1] + alpha * exp(u[1]);
+  return f;
+}
+
+int main() {
+  continuation_parameters params(newton_parameters(10, 0.000001),
+    1.45, 0.0002, 0.008, direction::forward);
+  vector_xdd u0 = vector_xdd::Zero(2);
+  dual_d a0 = 0.0;
+
+  for (auto [p, v] : arc_length(f, params, u0, alpha0, to_2d<0>)) {
+    // Do something with 'p' and 'v';
+  }
+}
+```
+
 ## Осциллятор Дуффинга
 
 $$\ddot{x} + \delta \dot{x} + \alpha x + \beta x^3 = \gamma \cos (\omega t)$$
@@ -338,29 +369,47 @@ p1 <- ggplot() +
     geom_path(aes(y = y, x = x), data = bifurcation_diagramm, colour = "coral", size = 1) + 
     theme_gray()
  
-p1 + labs(x = expression(alpha), y = expression(f[0]))
+p1 + labs(x = expression(omega), y = expression(A[0]))
 ```
 </center>
 
-## Код на C++
+## Периодические решения для осциллятора Дуффинга 
 
 ```cpp
-#include <iostream>
-#include <fstream>
-using namespace std;
-
 #include <nld/autocont.hpp>
 using namespace nld;
 
+vector_xdd duff(const vector_xdd& y, dual_d t, dual_d w) {
+  vector_xdd dy(y.size());
+  dy[0] = y[1] / w;
+  dy[1] = -0.01*y[1] - 0.1*y[0] - 15*y[0]*y[0]*y[0] - 0.86e-3*cos(t);
+  return dy;
+}
+
 int main() {
-    continuation_parameters params(newton_parameters(10, 0.000001),
-      1.45, 0.0002, 0.008, direction::forward);
-
-    vector_xdd u0 = vector_xdd::Zero(2);
-    dual_d a0 = 0.0;
-
-    for (auto [v, p] : arc_length(f, params, u0, alpha0, to_2d<0>)) {
-        // Do something with 'p' and 'v';
-    }
+  vector_xdd x = vector_xdd::Zero(2);
+  dual_d w = 0.05;
+  newton_parameters np(10, 0.00005);
+  continuation_parameters cp(np, 1.5, 0.0025, 0.001, direction::forward);
+  auto ip = constant_step_parameters{ 0.0, 2.0*PI, 200 };
+  auto f = two_point_boundary_value_problem<runge_kutta_4>(duff, ip); 
+    
+  for (auto [p, v] : arc_length(f, cp, x, w, half_swing(duff, ip, 0))) {
+    // Do something with 'p' and 'v';
+  }
 }
 ```
+
+## Публикации 
+
+1. [Periodic, quasi-periodic, and chaotic geometrically nonlinear forced vibrations of a shallow cantilever shell. KV Avramov, SE Malyshev](https://link.springer.com/article/10.1007/s00707-017-2087-x)
+
+2. [Bifurcations and chaotic forced vibrations of cantilever beams with breathing cracks. K Avramov, S Malyshev](https://link.springer.com/article/10.1007/s00707-017-2087-x)
+
+3. [Периодические, почти периодические и хаотические вынужденные колебания пологой консольной оболочки при геометрически нелинейном деформировании С. Е. Малышев, К. В. Аврамов, В. Н. Конкин](http://www.irbis-nbuv.gov.ua/cgi-bin/irbis_nbuv/cgiirbis_64.exe?I21DBN=LINK&P21DBN=UJRN&Z21ID=&S21REF=10&S21CNR=20&S21STN=1&S21FMT=ASP_meta&C21COM=S&2_S21P03=FILA=&2_S21STR=PMash_2017_20_3_6)
+
+## Планы
+
+Результатом проделанной работы является библиотека на языке С++ (пока не выпущена) для решения задач нелинейной динамики. 
+
+Описанный выше подход к реализации метода продолжения решений будет применен для задачи колебаний шарнирно опертого стержня с трещиной при геометрически нелинейном деформировании.
