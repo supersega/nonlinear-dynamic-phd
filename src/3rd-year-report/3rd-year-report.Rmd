@@ -22,7 +22,7 @@ header-includes:
 encoding: UTF-8
 mainfont: Arial
 author: Малышев Сергей
-date: Февраль 23, 2021
+date: Февраль 25, 2021
 ---
 
 ```{r setup, include=FALSE}
