@@ -306,7 +306,7 @@ while norm(F(x)) < tolerance
 > 2. Заменить алгоритм вычисления матрицы Якоби на алгоритм который учитывает АД.
 > 3. Использовать полученный код для вычислений.
 
-## Алгебраическая система из Matcont tutorial
+## Алгебраическая система из руководства Matcont
 
 \begin{cases} - a_11u_0 + a_12u_1 + \alpha exp(u_0) = 0 \\\\ a_21u_0 - a_22u_1 + \alpha exp(u_1) = 0 \end{cases}
 
@@ -318,16 +318,48 @@ options(warn=-1)
 library(ggplot2)
 
 bifurcation_diagramm <- read.csv("data/matcont_al.csv", sep = ";")
+bifurcation_diagramm2 <- read.csv("data/matcont_al2.csv", sep = ";")
 
 p1 <- ggplot() + 
     geom_path(aes(y = y, x = x), data = bifurcation_diagramm, colour = "coral", size = 1) + 
+    geom_path(aes(y = y, x = x), data = bifurcation_diagramm2, colour = "coral", size = 1) + 
+    geom_point(aes(y = y, x = x), data = bifurcation_diagramm2[1, ], colour = "red", size = 2) + 
     theme_gray()
  
-p1 + labs(x = expression(alpha), y = expression(f[0]))
+p1 + labs(x = expression(alpha), y = expression(u[0]))
 ```
 </center>
 
-## Пример из Matcont tutorial
+## Пример из Matcont до АД
+
+```cpp
+#include <nld/autocont.hpp>
+using namespace nld;
+
+vector_xdd f(const vector_xdd& u, dual_d alpha) {
+  vector_xdd f(u.size());
+  f[0] = - 2 * u[0] + u[1] + a * exp(u[0]);
+  f[1] = u[0] - 2 * u[1] + a * exp(u[1]);
+  return f;
+}
+
+// How to get rid of them?
+vector_xdd dfdu(const vector_xdd& u, dual_d a) { // code omitted }
+vector_xdd dfda(const vector_xdd& u, dual_d a) { // code omitted }
+
+int main() {
+  continuation_parameters params(newton_parameters(10, 0.000001),
+    1.45, 0.0002, 0.008, direction::forward);
+  vector_xdd u0 = vector_xdd::Zero(2);
+  dual_d a0 = 0.0;
+
+  for (auto [p, v] : arc_length(f, dfdu, dfda, params, u0, a0, to_2d<0>)) {
+    // Do something with 'p' and 'v';
+  }
+}
+```
+
+## Пример из Matcont после АД
 
 ```cpp
 #include <nld/autocont.hpp>
@@ -373,13 +405,40 @@ p1 + labs(x = expression(omega), y = expression(A[0]))
 ```
 </center>
 
-## Периодические решения для осциллятора Дуффинга 
+## Периодические решения до АД
 
 ```cpp
 #include <nld/autocont.hpp>
 using namespace nld;
 
-vector_xdd duff(const vector_xdd& y, dual_d t, dual_d w) {
+vector_xdd duff(vector_xdd& y, dual_d t, dual_d w) {
+  vector_xdd dy(y.size());
+  dy[0] = y[1] / w;
+  dy[1] = -0.01*y[1] - 0.1*y[0] - 15*y[0]*y[0]*y[0] - 0.86e-3*cos(t);
+  return dy;
+}
+
+vector_xdd dduffdy(vector_xdd& u, dual_d t, dual_d w) { /* omitted */ }
+vector_xdd dduffdw(vector_xdd& u, dual_d t, dual_d w) { /* omitted */ }
+
+int main() {
+  // Inittialization omitted
+  auto f = two_point_boundary_value_problem<runge_kutta_4>(
+    duff, dduffdy, dduffdw, ip);
+  //         ^        ^                 
+  for (auto [p, v] : arc_length(f, cp, x, w, half_swing(duff, ip, 0))) {
+    // Do something with 'p' and 'v';
+  }
+}
+```
+
+## Периодические решения после АД
+
+```cpp
+#include <nld/autocont.hpp>
+using namespace nld;
+
+vector_xdd duff(vector_xdd& y, dual_d t, dual_d w) {
   vector_xdd dy(y.size());
   dy[0] = y[1] / w;
   dy[1] = -0.01*y[1] - 0.1*y[0] - 15*y[0]*y[0]*y[0] - 0.86e-3*cos(t);
