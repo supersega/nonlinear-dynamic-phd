@@ -160,7 +160,7 @@ $$\frac{z_1} {z_2} = \frac{a_1 + \varepsilon b_1} {a_2 + \varepsilon b_2} = \fra
 </div>
 
 <div class="fragment">
-$$ \frac{z_1} {z_2} = \frac{a_1} {a_2} - \varepsilon \boxed {\frac{b_1 a_2 - a_1 b_2} {a_2}} $$
+$$ \frac{z_1} {z_2} = \frac{a_1} {a_2} - \varepsilon \boxed {\frac{b_1 a_2 - a_1 b_2} {a_2^2}} $$
 ...
 </div>
 
